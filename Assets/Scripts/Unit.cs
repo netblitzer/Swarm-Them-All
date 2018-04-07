@@ -11,8 +11,6 @@ public class Unit : MonoBehaviour {
 
     public Vector3 force;
 
-    public float maxSpeed = 10f;
-
     public float distFromSelected = 2f;
 
     NavMeshAgent agent;
@@ -21,8 +19,20 @@ public class Unit : MonoBehaviour {
 
     public bool atTarget;
 
-	// Use this for initialization
-	void Start () {
+    public float health;
+
+    public float maxHealth = 40f;
+
+    public float armor = 1f;
+
+    public float attackDamage = 10f;
+
+    public float attackSpeed = 1f;
+
+    public float maxSpeed = 10f;
+
+    // Use this for initialization
+    void Start () {
         this.agent = GetComponent<NavMeshAgent>();
 
         this.position = this.transform.position;
@@ -31,6 +41,7 @@ public class Unit : MonoBehaviour {
         this.force = Vector3.zero;
 
         this.atTarget = true;
+        this.health = this.maxHealth;
 	}
 	
 	// Update is called once per frame
