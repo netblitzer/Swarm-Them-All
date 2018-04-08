@@ -4,15 +4,31 @@ using UnityEngine;
 
 public class ArenaManager : MonoBehaviour {
 
-    List<Unit> Player1Units;
+    // Prefabs for the players to use.
+    public GameObject unitPrefab;
+    public GameObject bunkerPrefab;
+
+    public Player[] players;
 
 	// Use this for initialization
 	void Start () {
-        this.Player1Units = new List<Unit>();
-        this.Player1Units.AddRange(FindObjectsOfType<Unit>());
 
-        foreach(Unit u in this.Player1Units) {
-            u.SetPosition(new Vector3(Random.Range(-10f, 10f), 0.5f, Random.Range(-10f, 10f)));
+        players = new Player[4];
+
+        for(int i = 0; i < players.Length; i++) {
+            // Find where to start the new player.
+            Vector3 startPosition = new Vector3(400f * Mathf.Sin(Mathf.PI * i / 2), 0, 400f * Mathf.Cos(Mathf.PI * i / 2));
+            // Create them.
+            players[i] = new Player();
+
+            // If they are the first player, they should be human.
+            if (i == 0) {
+                players[i].Init(PlayerType.HUMAN, startPosition, this);
+            }
+            else {
+                // Make them a computer otherwise.
+                players[i].Init(PlayerType.COMPUTER, startPosition, this);
+            }
         }
 	}
 	

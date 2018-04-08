@@ -5,44 +5,60 @@ using UnityEngine.AI;
 
 public class Unit : MonoBehaviour {
 
+    public Player parent;
+
     public Vector3 position;
 
     public Vector3 velocity;
 
     public Vector3 force;
 
-    public float distFromSelected = 2f;
+    public float distanceToTargetToSlow = 2f;
 
-    NavMeshAgent agent;
-
-    public Vector3 targetPosition;
+    public Vector3 targetMovePosition;
 
     public bool atTarget;
 
     public float health;
 
-    public float maxHealth = 40f;
+    public UnitParams myParams;
 
-    public float armor = 1f;
-
-    public float attackDamage = 10f;
-
-    public float attackSpeed = 1f;
-
-    public float maxSpeed = 10f;
+    public ViewRangeCollider viewRange;
 
     // Use this for initialization
-    void Start () {
-        this.agent = GetComponent<NavMeshAgent>();
-
-        this.position = this.transform.position;
-
-        this.velocity = Vector3.zero;
-        this.force = Vector3.zero;
-
-        this.atTarget = true;
-        this.health = this.maxHealth;
+    void Awake () {
+        this.viewRange = this.GetComponentInChildren<ViewRangeCollider>();
 	}
+
+    public void Init (Player _parent, Vector3 _position, UnitParams _params) {
+        this.Init(_parent, _position, _position, _params);
+    }
+
+    public void Init (Player _parent, Vector3 _position, Vector3 _targetMovePosition, UnitParams _params) {
+
+        if (_parent == null) {
+            Debug.LogError("ERROR: Unit created without a parent!");
+            GameObject.Destroy(this);
+        }
+
+        this.parent = _parent;
+
+        this.position = _position;
+        this.transform.position = this.position;
+        this.targetMovePosition = _targetMovePosition;
+
+        // Initialize the units view range class.
+        this.viewRange.Init(this, _params.viewRange);
+
+        if (Vector3.Distance(this.targetMovePosition, this.position) > this.distanceToTargetToSlow)
+            this.atTarget = false;
+        else
+            this.atTarget = true;
+
+        this.myParams = _params;
+        this.health = this.myParams.maxHealth;
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -52,31 +68,35 @@ public class Unit : MonoBehaviour {
             RaycastHit mouseToWorld;
             if (Physics.Raycast(mouseRay, out mouseToWorld, 1000f)) {
                 Debug.Log(mouseToWorld.point);
-                this.targetPosition = mouseToWorld.point;
+                this.targetMovePosition = mouseToWorld.point;
                 this.atTarget = false;
             }
         }
 
         if (!this.atTarget) {
 
-            Vector3 diff = this.targetPosition - this.position;
+            Vector3 diff = this.targetMovePosition - this.position;
             diff.y = 0f;
 
             float dist = Vector3.SqrMagnitude(diff);
 
-            if (dist < this.distFromSelected) {
+            if (dist < this.distanceToTargetToSlow) {
                 this.atTarget = true;
             }
             else {
-                this.ApplyForce(diff.normalized * 20f);
+                this.ApplyForce(diff.normalized * this.myParams.movementForce);
             }
         }
         else {
             if (this.velocity.sqrMagnitude > 1) {
-                this.ApplyForce(-this.velocity * 5f);
-            } else
-                this.velocity = Vector3.zero;
+                this.ApplyForce(-this.velocity * this.myParams.movementDeceleration);
+            }
         }
+
+        if (this.velocity.sqrMagnitude > 1f) {
+            this.ApplyForce(Vector3.Scale(this.velocity, this.velocity) * -this.myParams.movementDrag);
+        } else
+            this.velocity = Vector3.zero;
 
         this.UpdatePhysics();
 	}
@@ -96,8 +116,6 @@ public class Unit : MonoBehaviour {
 
         this.force = Vector3.zero;
 
-        this.velocity = Vector3.ClampMagnitude(this.velocity, this.maxSpeed);
-
         Vector3 targetPos = this.position + this.velocity * Time.deltaTime;
 
         NavMeshHit posSample;
@@ -108,4 +126,32 @@ public class Unit : MonoBehaviour {
 
         this.transform.position = this.position;
     }
+}
+
+public struct UnitParams {
+    public float maxHealth;
+    public float armor;
+    public float attackSpeed;
+    public float attackDamage;
+    public float movementForce;
+    public float movementDrag;
+    public float movementDeceleration;
+    public float viewRange;
+
+    public UnitParams(float _max, float _a, float _aS, float _aD, float _mF, float _mDr, float _mDe, float _vr) {
+        this.maxHealth = _max;
+        this.armor = _a;
+        this.attackSpeed = _aS;
+        this.attackDamage = _aD;
+        this.movementForce = _mF;
+        this.movementDrag = _mDr;
+        this.movementDeceleration = _mDe;
+        this.viewRange = _vr;
+    }
+}
+
+public enum UnitAttackDamageTypes {
+    NORMAL,
+    ACID,
+    ANTIFLESH,
 }
